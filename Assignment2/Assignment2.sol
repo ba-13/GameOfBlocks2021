@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity >=0.7.0 <0.9.0;
 
 // import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/math/SafeMath.sol";
 
@@ -15,7 +15,7 @@ contract MetaCoin {
 
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
 
-    constructor() public {
+    constructor() {
         balances[tx.origin] = 100000;
     }
 
@@ -60,7 +60,7 @@ contract Loan is MetaCoin {
         _; // Placeholder for the function this modifier is used in.
     }
 
-    constructor() public {
+    constructor() {
         Owner = msg.sender; // Made the creator of the contract the Owner.
         // You can take the help of 2_owner.sol contract in remix for this and the above function.
     }

@@ -65,3 +65,25 @@ would return 10, as though no interest has been applied.
 
 would return 120, just as though of a simple interest calculation.
 This is occuring because of neglecting the small increase of principle per iteration.
+
+---
+
+## Update
+
+> To implement a funciton for retrieving the address of the creditor with max request. This function can only be accessed by the owner.
+
+Two implemenations, one by modifying the original file, and is more gas efficient, but has a critical drawback. <br />
+The second implemenation is through loops and mapping. Which is more reliable, but gas consumption peaks. <br />
+
+- ### First Method:
+
+  As in the main, `Assignment2.sol` file, the function `getMaxAddress()` (view) is implemented by keeping 2 state variables, `maxDebt` and `maxDebtAddress` which are updated everytime someone requests for a repayment. The critical flaw in this implementation is, if the owner repays the max Creditor, we won't have any idea of how to point to the new max creditor.
+
+- ### Second Method:
+  Showed in the `Assignment2_update.sol` the function `getMaxAddress()` (view) is implemented by looping throught the mapping of creditors, while the mapping is updated everytime someone claims for a repayment through `reqLoan` function. This implementation has no such flaw as above, but is extremely gas-inefficient, as the looping is done throughout the mapping everytime the owner requests for `getMaxAddress()`.
+
+---
+
+### MasoCoin
+
+Just me trying to create an alt-coin. Couldn't understand the need of _delegate_ and approval system.
