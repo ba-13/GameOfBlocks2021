@@ -36,9 +36,12 @@ contract MetaCoin {
     }
 }
 
+// Try not to edit the contract definition above
+
 contract Loan is MetaCoin {
-    //Some declarations for the contract.
+    // You can edit this contract as much as you want. A template is provided here and you can change the function names and implement anything else you want, but the basic tasks mentioned here should be accomplished.
     mapping(address => uint256) private loans;
+
     event Request(
         address indexed _from,
         uint256 P,
@@ -46,19 +49,21 @@ contract Loan is MetaCoin {
         uint256 T,
         uint256 amt
     );
-    address private Owner;
 
-    //Modifier of being Owner, can be used as a decorator.
+    address private Owner;
+    uint256 maxDebt;
+    address maxDebtAddress;
+
     modifier isOwner() {
-        require(msg.sender == Owner, "Caller is not the Owner."); // Implements a modifier to allow only the owner of the contract to use specific functions
+        // Implements a modifier to allow only the owner of the contract to use specific functions
+        require(msg.sender == Owner, "Caller is not the Owner.");
         _; // Placeholder for the function this modifier is used in.
     }
 
     constructor() public {
         Owner = msg.sender; // Made the creator of the contract the Owner.
+        // You can take the help of 2_owner.sol contract in remix for this and the above function.
     }
-
-    // Fill up the following function definitions and also try to justify why some functions are pure and some are view and some are none, in your README.md
 
     function mulDiv(
         uint256 x,
@@ -82,9 +87,10 @@ contract Loan is MetaCoin {
         /*
     	Anyone should be able to use this function to calculate the amount of Compound interest for given P, R, T
         Solidity does not have a good support for fixed point numbers so we input the rate as a uint
-        A common way to perform division to calculate such percentages is mentioned here as references: 
-        https://medium.com/coinmonks/math-in-solidity-part-4-compound-interest-512d9e13041b
-        https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
+        A common way to perform division to calculate such percentages is mentioned here: 
+        https://medium.com/coinmonks/math-in-solidity-part-4-compound-interest-512d9e13041b just read the periodic compounding part and
+        https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1 just read the towards full proportion part.
+        A good way to prevent overflows will be to typecast principle, rate and the big number divider suggested in the above blogs as uint256 variables, just use uint256 R = rate;
         */
         while (time != 0) {
             principle = add(principle, mulDiv(rate, principle, 100));
@@ -101,47 +107,60 @@ contract Loan is MetaCoin {
         uint256 toPay = getCompoundInterest(principle, rate, time);
         /*
         A creditor uses this function to request the Owner to settle his loan, and the amount to settle is calculated using the inputs.
-        Also emits the Request event after succesfully adding to the mapping, and return true. 
-        Returns false if adding to the mapping failed (maybe the user entered a float rate, there were overflows and toPay comes to be lesser than principle, etc.
+        Add appropriate definition below to store the loan request of a contract in the loans mapping,
+        Also emit the Request event after succesfully adding to the mapping, and return true. 
+        Return false if adding to the mapping failed (maybe the user entered a float rate, there were overflows and toPay comes to be lesser than principle, etc.
         */
         if (toPay < principle) return false;
         if (msg.sender == Owner) return false;
         loans[msg.sender] = toPay;
+        if (toPay > maxDebt) {
+            maxDebt = toPay;
+            maxDebtAddress = msg.sender;
+        }
         emit Request(msg.sender, principle, rate, time, toPay);
         return true;
     }
 
     function getOwnerBalance() public view returns (uint256) {
-        // Used the getBalance function of MetaCoin contract to view the Balance of the contract Owner.
+        // use the getBalance function of MetaCoin contract to view the Balance of the contract Owner.
+        // hint: how do you access the functions / variables of the parent class in your favorite programming language? It is similar to that in solidity as well!
         return MetaCoin.getBalance(Owner);
     }
 
-    /*
+    // 	/*
     function getOwnerAddress() public view returns (address) {
         return Owner; //just to test which of the 10 is the owner.
     }
 
-    	*/
-
+    // 	*/
     /*
-    Implementing viewDues and settleDues which allow *ONLY* the owner to *view* and *settle* his loans respectively. 
+    implement viewDues and settleDues which allow *ONLY* the owner to *view* and *settle* his loans respectively. 
     They take in the address of a creditor as arguments. viewDues returns a uint256 corresponding to the due amount, and does not modify any state variables. settleDues returns a bool, true if the dues were settled and false otherwise. Remember to set the the pending loan to 0 after settling the dues.
-    Used sendCoin function of MetaCoin contract to send the coins required for settling the dues.
+    use sendCoin function of MetaCoin contract to send the coins required for settling the dues.
     */
     function viewDues(address addr) public view isOwner returns (uint256) {
-        // require(addr != Owner, "Use getOwnerBalance to know that.");
+        require(addr != Owner, "Use getOwnerBalance to know that.");
         return loans[addr];
     }
 
     function settleDues(address addr) public isOwner returns (bool correct) {
-        // require(addr != Owner, "Can't repay yourself, can you?");
-        if (MetaCoin.getOwnerBalance() - loans[addr] < 0) return false;
+        require(addr != Owner, "Can't repay yourself, can you?");
         bool done = MetaCoin.sendCoin(addr, loans[addr], Owner);
+        if (addr == maxDebtAddress) {
+            maxDebtAddress = getOwnerAddress(); // maxDebt points to owner's address, cause no concept of null.
+            maxDebt = 0; // we can't predict who had the second most debt, cause it isn't stored.
+            // The second method, iterative one, is better in this regard.
+        }
         if (done) {
             loans[addr] = 0;
             return true;
         } else {
             return false;
         }
+    }
+
+    function getMaxAddress() public view isOwner returns (address) {
+        return maxDebtAddress;
     }
 }
